@@ -54,8 +54,10 @@ ending_string = "#end"
 
 # settings:
 own_names_or_steamids = []
-opening_delay = 0
+opening_delay = 0.0
+opening_same_player_delay = 0.0
 csgo_log_file = ""
+websites = []
 
 
 class Player:
@@ -88,12 +90,44 @@ class Player:
         if self._is_bot:
             print_wrapper(self.name + " is a bot")
         else:
-            command = 'start "" "' + self.get_url() + '"'
-            os.system(command)
+            commands = []
+            if "csgostats.gg" in websites:
+                commands.append('start "" "' + self.get_csgostats_gg_url() + '"')
+            if "csgo-stats.net" in websites:
+                commands.append('start "" "' + self.get_csgo_stats_net_url() + '"')
+            if "csgo-stats.com" in websites:
+                commands.append('start "" "' + self.get_csgo_stats_com_url() + '"')
+            if "steamcommunity.com" in websites:
+                commands.append('start "" "' + self.get_steam_url() + '"')
+            if "steamid.uk" in websites:
+                commands.append('start "" "' + self.get_steamid_uk_url() + '"')
+            if "steamdb.info" in websites:
+                commands.append('start "" "' + self.get_steamdb_info_url() + '"')
+
+            for command in commands:
+                os.system(command)
+                if len(commands) > 1:
+                    time.sleep(opening_same_player_delay)
+
             time.sleep(opening_delay)
 
-    def get_url(self):
+    def get_csgostats_gg_url(self):
         return str("https://csgostats.gg/player/") + str(Player.steamid_to_64bit(self.uniqueid))
+
+    def get_csgo_stats_net_url(self):
+        return str("https://csgo-stats.net/search?q=") + str(Player.steamid_to_64bit(self.uniqueid))
+
+    def get_csgo_stats_com_url(self):
+        return str("https://csgostats.gg/player/") + str(Player.steamid_to_64bit(self.uniqueid))
+
+    def get_steam_url(self):
+        return str("http://steamcommunity.com/profiles/") + str(Player.steamid_to_64bit(self.uniqueid))
+
+    def get_steamid_uk_url(self):
+        return str("https://steamid.uk/profile/") + str(Player.steamid_to_64bit(self.uniqueid))
+
+    def get_steamdb_info_url(self):
+        return str("https://steamdb.info/calculator/") + str(Player.steamid_to_64bit(self.uniqueid))
 
     @staticmethod
     def steamid_to_64bit(steamid: str):
@@ -240,18 +274,26 @@ def main():
     config = configparser.ConfigParser()
     config.read("config.ini")
     try:
+        global websites
         global opening_delay
+        global opening_same_player_delay
         global csgo_log_file
         own_names_or_steamids[:] = list(config["DEFAULT"]["IGNORE_PLAYERS_TEAM"].split(","))
         config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(own_names_or_steamids))
+        websites[:] = list(config["DEFAULT"]["USE_WEBSITES"].split(","))
+        config.set('DEFAULT', 'USE_WEBSITES', ",".join(websites))
         opening_delay = float(config["DEFAULT"]["OPENING_DELAY"])
         config.set('DEFAULT', 'OPENING_DELAY', opening_delay)
+        opening_same_player_delay = float(config["DEFAULT"]["OPENING_DELAY_SAME_PLAYER"])
+        config.set('DEFAULT', 'OPENING_DELAY_SAME_PLAYER', opening_same_player_delay)
         csgo_log_file = config["DEFAULT"]["CSGO_LOG_FILE"]
         config.set('DEFAULT', 'CSGO_LOG_FILE',
                    csgo_log_file)
     except:
         config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(["PlayerName"]))
+        config.set('DEFAULT', 'USE_WEBSITES', ",".join(["csgostats.gg"]))
         config.set('DEFAULT', 'OPENING_DELAY', "0.1")
+        config.set('DEFAULT', 'OPENING_DELAY_SAME_PLAYER', "0.0")
         config.set('DEFAULT', 'CSGO_LOG_FILE', "C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\csgo\console.log")
 
     with open("config.ini", 'w') as configfile:
@@ -266,13 +308,19 @@ def main():
 
 def info():
     print("There is a settings file, where you can control the following:"
-          "\nignore_players_team:"
+          "\nIGNORE_PLAYERS_TEAM:"
           "\n\tcomma separated values"
           "\n\tpart of a username or steamid"
           "\n\twill only open players where none of these values matches with everyone in the team"
-          "\nopening_delay:"
+          "\nUSE_WEBSITES:"
+          "\n\tcomma separated values"
+          "\n\twebsites to open"
+          "\n\tcsgostats.gg,csgo-stats.net,csgo-stats.com,steamcommunity.com,steamid.uk,steamdb.info"
+          "\nOPENING_DELAY:"
           "\n\tdelay between opening each player"
-          "\ncsgo_log_file:"
+          "\nOPENING_DELAY_SAME_PLAYER:"
+          "\n\tdelay between different websites for same player"
+          "\nCSGO_LOG_FILE:"
           "\n\tcsgo console log file path"
           "\n\tset with: 'con_logfile console.log'"
           "\n\t"
