@@ -90,6 +90,7 @@ class Player:
         else:
             command = 'start "" "' + self.get_url() + '"'
             os.system(command)
+            time.sleep(opening_delay)
 
     def get_url(self):
         return str("https://csgostats.gg/player/") + str(Player.steamid_to_64bit(self.uniqueid))
@@ -149,8 +150,6 @@ def get_last_occurance(input_text: str):
                     return input_text
                 else:
                     print_wrapper("No end found")
-    else:
-        print_wrapper("No occurrence found")
     return False
 
 
@@ -236,6 +235,8 @@ def check_both():
 
 
 def main():
+    info()
+
     config = configparser.ConfigParser()
     config.read("config.ini")
     try:
@@ -243,14 +244,14 @@ def main():
         global csgo_log_file
         own_names_or_steamids[:] = list(config["DEFAULT"]["IGNORE_PLAYERS_TEAM"].split(","))
         config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(own_names_or_steamids))
-        opening_delay = int(config["DEFAULT"]["OPENING_DELAY"])
-        config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(own_names_or_steamids))
+        opening_delay = float(config["DEFAULT"]["OPENING_DELAY"])
+        config.set('DEFAULT', 'OPENING_DELAY', opening_delay)
         csgo_log_file = config["DEFAULT"]["CSGO_LOG_FILE"]
         config.set('DEFAULT', 'CSGO_LOG_FILE',
-                   "C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\csgo\console.log")
+                   csgo_log_file)
     except:
         config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(["PlayerName"]))
-        config.set('DEFAULT', 'OPENING_DELAY', "0")
+        config.set('DEFAULT', 'OPENING_DELAY', "0.1")
         config.set('DEFAULT', 'CSGO_LOG_FILE', "C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\csgo\console.log")
 
     with open("config.ini", 'w') as configfile:
@@ -262,6 +263,20 @@ def main():
         delay = 3.0
         time.sleep(delay - ((time.time() - start_time) % delay))
 
+
+def info():
+    print("There is a settings file, where you can control the following:"
+          "\nignore_players_team:"
+          "\n\tcomma separated values"
+          "\n\tpart of a username or steamid"
+          "\n\twill only open players where none of these values matches with everyone in the team"
+          "\nopening_delay:"
+          "\n\tdelay between opening each player"
+          "\ncsgo_log_file:"
+          "\n\tcsgo console log file path"
+          "\n\tset with: 'con_logfile console.log'"
+          "\n\t"
+          "\noptional keybind: bind f11 status")
 
 def print_wrapper(*args):
     now = datetime.datetime.now()
