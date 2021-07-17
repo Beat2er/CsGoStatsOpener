@@ -42,6 +42,7 @@ import winsound
 import configparser
 import pyperclip
 import os
+import datetime
 
 # internal variables
 last_found_players = list([])
@@ -56,10 +57,13 @@ opening_delay = 0
 
 
 class Player:
-    def __init__(self, userid: str, name: str, uniqueid: str, connected: str, ping: str, loss: str, state: str,
-                 rate: str):
+    def __init__(self, userid: str = None, name: str = None, uniqueid: str = None, connected: str = None, ping: str = None, loss: str = None, state: str = None,
+                 rate: str = None):
         self.userid = userid
         self.name = name
+        if userid == "BOT":
+            self._is_bot = True
+            return
         self.uniqueid = uniqueid
         self.connected = connected
         self.ping = ping
@@ -75,10 +79,14 @@ class Player:
     loss = None
     state = None
     rate = None
+    _is_bot = False
 
     def open_in_browser(self):
-        command = 'start "" "' + self.get_url() + '"'
-        os.system(command)
+        if self._is_bot:
+            print_wrapper(self.name + " is a bot")
+        else:
+            command = 'start "" "' + self.get_url() + '"'
+            os.system(command)
 
     def get_url(self):
         return str("https://csgostats.gg/player/") + str(Player.steamid_to_64bit(self.uniqueid))
@@ -99,10 +107,27 @@ def parse_line_as_player(line):
     parts.pop(0)  # remove first (#)
     parts.pop(0)  # remove first because unknown to me (#)
 
+    newparts = []
+    for part in parts:
+        if len(newparts) == 2:
+            if newparts[1].endswith('"'):
+                newparts.append(part)
+            else:
+                newparts[1] = newparts[1] + part
+        else:
+            newparts.append(part)
+
+    parts = newparts
+
     try:
-        player = Player(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6], parts[7])
+        player = None
+        if parts[0] == "BOT":   # weird because "remove first (#)" doesn't work because of missing space
+            player = Player(parts[0], line.split(" ")[1])
+        else:
+            player = Player(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6], parts[7])
         return player
-    except:
+    except Exception as e:
+        print(str(e))
         return False
 
 
@@ -122,17 +147,18 @@ def parse_input(input_text: str):
                     lines.pop(0)
                     for line in lines:
                         if not line.startswith("#"):
-                            print("'" + line + "' doesn't start with #")
+                            print_wrapper("'" + line + "' doesn't start with #")
                         player = parse_line_as_player(line)
                         if player:
                             players.append(player)
                         else:
-                            print("'" + line + "' couldn't be parsed as a player")
+                            if player != None:
+                                print_wrapper("'" + line + "' couldn't be parsed as a player")
 
                 else:
-                    print("No end found")
+                    print_wrapper("No end found")
     else:
-        print("No occurrence found")
+        print_wrapper("No occurrence found")
         return False
     return players
 
@@ -153,13 +179,16 @@ def check():
     if players:
         last_found_players[:] = players
         if last_clipboard_hash != clipboard_hash:
-            print("Opening")
+            print_wrapper("Opening")
             own_rates = []  # shouldn't be more than 1
             if own_names_or_steamids:
                 for own_string in own_names_or_steamids:
                     for player in players:
-                        if own_string in player.name or own_string in player.uniqueid or own_string in str(player.steamid_to_64bit(player.uniqueid)):
-                            own_rates.append(player.rate)
+                        try:    # bots have None set
+                            if own_string in player.name or own_string in player.uniqueid or own_string in str(player.steamid_to_64bit(player.uniqueid)):
+                                own_rates.append(player.rate)
+                        except:
+                            pass
             for player in last_found_players:
                 if player.rate not in own_rates or not own_rates:  # check in other team or nothing set
                     player.open_in_browser()
@@ -189,6 +218,12 @@ def main():
         delay = 3.0
         time.sleep(delay - ((time.time() - start_time) % delay))
 
+
+def print_wrapper(*args):
+    now = datetime.datetime.now()
+    args = list(args)
+    args.insert(0, now.strftime("%Y-%m-%d %H:%M:%S"))
+    print(*args)
 
 if __name__ == "__main__":
     # execute only if run as a script
