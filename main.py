@@ -1,11 +1,12 @@
+import configparser
+import datetime
+import os
 import re
 import time
 import winsound
-import configparser
-import pyperclip
-import os
-import datetime
 from functools import cmp_to_key
+
+import pyperclip
 
 # internal variables
 last_clipboard_hash = ""
@@ -24,6 +25,7 @@ dont_open_own = False
 delay_between_teams = 0.0
 url_between_teams = ""
 beep_between_teams = False
+
 
 class Player:
     def __init__(self, userid: str = None, name: str = None, uniqueid: str = None, connected: str = None,
@@ -195,8 +197,6 @@ def check(file: bool = False):
 
     short_text = get_last_occurance(text)
 
-
-
     hashed = hash(short_text)
     if last_hash != hashed and short_text:
         players = parse_input(short_text)
@@ -230,11 +230,11 @@ def check(file: bool = False):
 
             # Sorting
             players.sort(key=cmp_to_key(compare))
-            if players[0].rate != players[len(players) - 1].rate and own_rates: # check if multiple teams
+            if players[0].rate != players[len(players) - 1].rate and own_rates:  # check if multiple teams
                 last_rate = players[len(players) - 1]
                 if last_rate in own_rates:
                     pass
-                else:   # invert because we want enemies first
+                else:  # invert because we want enemies first
                     players.reverse()
 
             last_rate = players[0].rate
@@ -242,7 +242,7 @@ def check(file: bool = False):
                 if player.rate not in own_rates and own_rates:  # check in other team or nothing set
                     player.open_in_browser()
                 else:
-                    if last_rate != player.rate and last_rate:    # new team just started
+                    if last_rate != player.rate and last_rate:  # new team just started
                         if url_between_teams:
                             os.system('start "" "' + url_between_teams + '"')
                         if beep_between_teams:
@@ -253,7 +253,6 @@ def check(file: bool = False):
                     if not dont_open_own:
                         player.open_in_browser()
 
-
     if file:
         last_file_hash = hashed
     else:
@@ -263,7 +262,6 @@ def check(file: bool = False):
 def check_both():
     check(False)
     if csgo_log_file:
-
         check(True)
 
 
@@ -304,7 +302,8 @@ def main():
         config.set('DEFAULT', 'USE_WEBSITES', ",".join(["csgostats.gg"]))
         config.set('DEFAULT', 'OPENING_DELAY', "0.1")
         config.set('DEFAULT', 'OPENING_DELAY_SAME_PLAYER', "0.0")
-        config.set('DEFAULT', 'CSGO_LOG_FILE', "C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\csgo\console.log")
+        config.set('DEFAULT', 'CSGO_LOG_FILE',
+                   "C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\csgo\console.log")
         config.set('DEFAULT', 'DONT_OPEN_OWN_TEAM', "False")
         config.set('DEFAULT', 'TEAM_DELAY', "1.0")
         config.set('DEFAULT', 'TEAM_SEPARATOR_URL', "https://random.dog/")
