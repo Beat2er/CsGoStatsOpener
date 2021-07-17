@@ -47,6 +47,7 @@ import datetime
 # internal variables
 last_found_players = list([])
 last_clipboard_hash = ""
+last_file_hash = ""
 keys_pressed = list([])
 starting_string = "# userid name uniqueid connected ping loss state rate"
 ending_string = "#end"
@@ -54,10 +55,12 @@ ending_string = "#end"
 # settings:
 own_names_or_steamids = []
 opening_delay = 0
+csgo_log_file = ""
 
 
 class Player:
-    def __init__(self, userid: str = None, name: str = None, uniqueid: str = None, connected: str = None, ping: str = None, loss: str = None, state: str = None,
+    def __init__(self, userid: str = None, name: str = None, uniqueid: str = None, connected: str = None,
+                 ping: str = None, loss: str = None, state: str = None,
                  rate: str = None):
         self.userid = userid
         self.name = name
@@ -121,7 +124,7 @@ def parse_line_as_player(line):
 
     try:
         player = None
-        if parts[0] == "BOT":   # weird because "remove first (#)" doesn't work because of missing space
+        if parts[0] == "BOT":  # weird because "remove first (#)" doesn't work because of missing space
             player = Player(parts[0], line.split(" ")[1])
         else:
             player = Player(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6], parts[7])
@@ -131,7 +134,7 @@ def parse_line_as_player(line):
         return False
 
 
-def parse_input(input_text: str):
+def get_last_occurance(input_text: str):
     count = input_text.count(starting_string)
     players = []
     if count > 0:
@@ -143,23 +146,29 @@ def parse_input(input_text: str):
                 end = input_text.find(ending_string, start)
                 if start < end:
                     input_text = input_text[start:end]
-                    lines = input_text.splitlines()
-                    lines.pop(0)
-                    for line in lines:
-                        if not line.startswith("#"):
-                            print_wrapper("'" + line + "' doesn't start with #")
-                        player = parse_line_as_player(line)
-                        if player:
-                            players.append(player)
-                        else:
-                            if player != None:
-                                print_wrapper("'" + line + "' couldn't be parsed as a player")
-
+                    return input_text
                 else:
                     print_wrapper("No end found")
     else:
         print_wrapper("No occurrence found")
-        return False
+    return False
+
+
+def parse_input(input_text: str):
+    players = []
+    lines = input_text.splitlines()
+    lines = [line for line in lines if line]
+    lines.pop(0)
+    for line in lines:
+        if not line.startswith("#"):
+            print_wrapper("'" + line + "' doesn't start with #")
+        player = parse_line_as_player(line)
+        if player:
+            players.append(player)
+        else:
+            if player != None:
+                print_wrapper("'" + line + "' couldn't be parsed as a player")
+
     return players
 
 
@@ -167,25 +176,45 @@ def beep(duration: int, frequency: int):  # in ms; in Hertz
     winsound.Beep(frequency, duration)
 
 
-def check():
-    clipboard = pyperclip.paste()
-    players = parse_input(clipboard)
-    if players and not last_found_players:
-        beep(200, 250)
-
-    clipboard_hash = hash(clipboard)
+def check(file: bool = False):
     global last_clipboard_hash
+    global last_file_hash
+    text = ""
+    last_hash = ""
+    if file:
+        last_hash = last_file_hash
+        try:
+            a_file = open(csgo_log_file, "r")
+            lines = a_file.readlines()
+            text = lines[-80:]
+            text = "\n".join(text)
+        except IOError:
+            print_wrapper("Couldn't read " + csgo_log_file)
+            return False
+    else:
+        last_hash = last_clipboard_hash
+        text = pyperclip.paste()
 
-    if players:
-        last_found_players[:] = players
-        if last_clipboard_hash != clipboard_hash:
+    short_text = get_last_occurance(text)
+
+
+
+    hashed = hash(short_text)
+    if last_hash != hashed and short_text:
+        players = parse_input(short_text)
+        if players and not last_found_players:
+            beep(200, 250)
+
+        if players:
+            last_found_players[:] = players
             print_wrapper("Opening")
             own_rates = []  # shouldn't be more than 1
             if own_names_or_steamids:
                 for own_string in own_names_or_steamids:
                     for player in players:
-                        try:    # bots have None set
-                            if own_string in player.name or own_string in player.uniqueid or own_string in str(player.steamid_to_64bit(player.uniqueid)):
+                        try:  # bots have None set
+                            if own_string in player.name or own_string in player.uniqueid or own_string in str(
+                                    player.steamid_to_64bit(player.uniqueid)):
                                 own_rates.append(player.rate)
                         except:
                             pass
@@ -193,7 +222,17 @@ def check():
                 if player.rate not in own_rates or not own_rates:  # check in other team or nothing set
                     player.open_in_browser()
 
-    last_clipboard_hash = clipboard_hash
+    if file:
+        last_file_hash = hashed
+    else:
+        last_clipboard_hash = hashed
+
+
+def check_both():
+    check(False)
+    if csgo_log_file:
+
+        check(True)
 
 
 def main():
@@ -201,20 +240,25 @@ def main():
     config.read("config.ini")
     try:
         global opening_delay
+        global csgo_log_file
         own_names_or_steamids[:] = list(config["DEFAULT"]["IGNORE_PLAYERS_TEAM"].split(","))
         config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(own_names_or_steamids))
         opening_delay = int(config["DEFAULT"]["OPENING_DELAY"])
         config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(own_names_or_steamids))
+        csgo_log_file = config["DEFAULT"]["CSGO_LOG_FILE"]
+        config.set('DEFAULT', 'CSGO_LOG_FILE',
+                   "C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\csgo\console.log")
     except:
         config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(["PlayerName"]))
         config.set('DEFAULT', 'OPENING_DELAY', "0")
+        config.set('DEFAULT', 'CSGO_LOG_FILE', "C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\csgo\console.log")
 
     with open("config.ini", 'w') as configfile:
         config.write(configfile)
 
     start_time = time.time()
     while True:
-        check()
+        check_both()
         delay = 3.0
         time.sleep(delay - ((time.time() - start_time) % delay))
 
@@ -224,6 +268,7 @@ def print_wrapper(*args):
     args = list(args)
     args.insert(0, now.strftime("%Y-%m-%d %H:%M:%S"))
     print(*args)
+
 
 if __name__ == "__main__":
     # execute only if run as a script
