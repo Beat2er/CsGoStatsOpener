@@ -23,7 +23,7 @@ websites = []
 dont_open_own = False
 delay_between_teams = 0.0
 url_between_teams = ""
-beep_between_teams = 0.0
+beep_between_teams = False
 
 class Player:
     def __init__(self, userid: str = None, name: str = None, uniqueid: str = None, connected: str = None,
@@ -246,6 +246,7 @@ def check(file: bool = False):
                         if beep_between_teams:
                             beep(200, 220)
                         time.sleep(delay_between_teams)
+                    last_rate = player.rate
 
                     if dont_open_own:
                         player.open_in_browser()
@@ -288,13 +289,13 @@ def main():
         config.set('DEFAULT', 'OPENING_DELAY_SAME_PLAYER', str(opening_same_player_delay))
         csgo_log_file = config["DEFAULT"]["CSGO_LOG_FILE"]
         config.set('DEFAULT', 'CSGO_LOG_FILE', str(csgo_log_file))
-        dont_open_own = bool(config["DEFAULT"]["DONT_OPEN_OWN_TEAM"])
+        dont_open_own = config["DEFAULT"]["DONT_OPEN_OWN_TEAM"] == "True"
         config.set('DEFAULT', 'DONT_OPEN_OWN_TEAM', str(dont_open_own))
         delay_between_teams = float(config["DEFAULT"]["TEAM_DELAY"])
         config.set('DEFAULT', 'TEAM_DELAY', str(delay_between_teams))
         url_between_teams = config["DEFAULT"]["TEAM_SEPARATOR_URL"]
         config.set('DEFAULT', 'TEAM_SEPARATOR_URL', str(url_between_teams))
-        beep_between_teams = bool(config["DEFAULT"]["TEAM_SWITCH_BEEP"])
+        beep_between_teams = config["DEFAULT"]["TEAM_SWITCH_BEEP"] == "True"
         config.set('DEFAULT', 'TEAM_SWITCH_BEEP', str(beep_between_teams))
     except Exception as e:
         config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(["PlayerName"]))
@@ -334,7 +335,14 @@ def info():
           "\nCSGO_LOG_FILE:"
           "\n\tcsgo console log file path"
           "\n\tset with: 'con_logfile console.log'"
-          "\n\t"
+          "\nDONT_OPEN_OWN_TEAM:"
+          "\n\twont open any player in your team"
+          "\nTEAM_DELAY:"
+          "\n\tdelay between 2 different teams"
+          "\nTEAM_SEPARATOR_URL:"
+          "\n\turl between 2 different teams"
+          "\nTEAM_SWITCH_BEEP:"
+          "\n\tbeep between 2 different teams"
           "\noptional keybind: bind f11 status")
 
 
