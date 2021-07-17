@@ -5,9 +5,9 @@ import configparser
 import pyperclip
 import os
 import datetime
+from functools import cmp_to_key
 
 # internal variables
-last_found_players = list([])
 last_clipboard_hash = ""
 last_file_hash = ""
 keys_pressed = list([])
@@ -29,11 +29,11 @@ class Player:
     def __init__(self, userid: str = None, name: str = None, uniqueid: str = None, connected: str = None,
                  ping: str = None, loss: str = None, state: str = None,
                  rate: str = None):
+        if userid == "BOT":
+            self.is_bot = True
+
         self.userid = userid
         self.name = name
-        if userid == "BOT":
-            self._is_bot = True
-            return
         self.uniqueid = uniqueid
         self.connected = connected
         self.ping = ping
@@ -49,10 +49,10 @@ class Player:
     loss = None
     state = None
     rate = None
-    _is_bot = False
+    is_bot = False
 
     def open_in_browser(self):
-        if self._is_bot:
+        if self.is_bot:
             print_wrapper(self.name + " is a bot")
         else:
             commands = []
@@ -200,11 +200,10 @@ def check(file: bool = False):
     hashed = hash(short_text)
     if last_hash != hashed and short_text:
         players = parse_input(short_text)
-        if players and not last_found_players:
+        if players:
             beep(200, 250)
 
         if players:
-            last_found_players[:] = players
             print_wrapper("Opening")
             own_rates = []  # shouldn't be more than 1
             if own_names_or_steamids:
@@ -226,8 +225,11 @@ def check(file: bool = False):
                 else:
                     return 0
 
-            # Calling
-            players.sort(key=compare)
+            # Remove bots
+            players = list(filter(lambda x: x.is_bot == False, players))
+
+            # Sorting
+            players.sort(key=cmp_to_key(compare))
             if players[0].rate != players[len(players) - 1].rate and own_rates: # check if multiple teams
                 last_rate = players[len(players) - 1]
                 if last_rate in own_rates:
@@ -235,12 +237,12 @@ def check(file: bool = False):
                 else:   # invert because we want enemies first
                     players.reverse()
 
-            last_rate = players[0]
-            for player in last_found_players:
-                if player.rate not in own_rates or not own_rates:  # check in other team or nothing set
+            last_rate = players[0].rate
+            for player in players:
+                if player.rate not in own_rates and own_rates:  # check in other team or nothing set
                     player.open_in_browser()
                 else:
-                    if last_rate != player.rate:    # new team just started
+                    if last_rate != player.rate and last_rate:    # new team just started
                         if url_between_teams:
                             os.system('start "" "' + url_between_teams + '"')
                         if beep_between_teams:
@@ -248,7 +250,7 @@ def check(file: bool = False):
                         time.sleep(delay_between_teams)
                     last_rate = player.rate
 
-                    if dont_open_own:
+                    if not dont_open_own:
                         player.open_in_browser()
 
 
