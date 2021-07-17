@@ -38,23 +38,21 @@
 #
 import re
 import time
-from pynput.keyboard import Listener
 import winsound
-import subprocess
 import configparser
 import pyperclip
-import _thread
+import os
 
 # internal variables
 last_found_players = list([])
+last_clipboard_hash = ""
 keys_pressed = list([])
 starting_string = "# userid name uniqueid connected ping loss state rate"
 ending_string = "#end"
 
 # settings:
-defined_hotkeys = []
-own_names_or_rates = []
-
+own_names_or_steamids = []
+opening_delay = 0
 
 
 class Player:
@@ -79,11 +77,11 @@ class Player:
     rate = None
 
     def open_in_browser(self):
-        proc = subprocess.Popen('cmd.exe', stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        stdout, stderr = proc.communicate('start "" "' + self.get_url() + '"')
+        command = 'start "" "' + self.get_url() + '"'
+        os.system(command)
 
     def get_url(self):
-        return "https://csgostats.gg/player/" + Player.steamid_to_64bit(self.uniqueid)
+        return str("https://csgostats.gg/player/") + str(Player.steamid_to_64bit(self.uniqueid))
 
     @staticmethod
     def steamid_to_64bit(steamid: str):
@@ -148,74 +146,44 @@ def check():
     players = parse_input(clipboard)
     if players and not last_found_players:
         beep(200, 250)
+
+    clipboard_hash = hash(clipboard)
+    global last_clipboard_hash
+
     if players:
         last_found_players[:] = players
+        if last_clipboard_hash != clipboard_hash:
+            print("Opening")
+            own_rates = []  # shouldn't be more than 1
+            if own_names_or_steamids:
+                for own_string in own_names_or_steamids:
+                    for player in players:
+                        if own_string in player.name or own_string in player.uniqueid or own_string in str(player.steamid_to_64bit(player.uniqueid)):
+                            own_rates.append(player.rate)
+            for player in last_found_players:
+                if player.rate not in own_rates or not own_rates:  # check in other team or nothing set
+                    player.open_in_browser()
 
-
-def hotkeys_pressed():
-    print("Nothing found in clipboard")
-    if not last_found_players:  # empty
-        beep(200, 100)
-        time.sleep(0.2)
-        beep(200, 100)
-        return
-
-    beep(200, 250)
-    for player in last_found_players:
-        if player.rate not in own_names_or_rates or not own_names_or_rates:  # check in other team or nothing set
-            player.open_in_browser()
-
-    last_found_players.clear()  # empty list
-
-
-
-
-
-def on_press(key):
-    key = str(key)
-    if key not in keys_pressed:
-        keys_pressed.append(key)
-
-        if set(defined_hotkeys).issubset(keys_pressed) and key in defined_hotkeys:
-            hotkeys_pressed()
-
-
-def on_release(key):
-    key = str(key)
-    try:
-        keys_pressed.remove(key)
-    except:
-        pass
-
-
-def init_keyboard():
-    with Listener(on_press=on_press, on_release=on_release) as listener:
-        listener.join()
+    last_clipboard_hash = clipboard_hash
 
 
 def main():
     config = configparser.ConfigParser()
     config.read("config.ini")
     try:
-        defined_hotkeys[:] = list(config["DEFAULT"]["HOTKEYS"].split(","))
-        config.set('DEFAULT', 'HOTKEYS', ",".join(defined_hotkeys))
-        own_names_or_rates[:] = list(config["DEFAULT"]["IGNORE_PLAYERS_TEAM"].split(","))
-        config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(own_names_or_rates))
+        global opening_delay
+        own_names_or_steamids[:] = list(config["DEFAULT"]["IGNORE_PLAYERS_TEAM"].split(","))
+        config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(own_names_or_steamids))
+        opening_delay = int(config["DEFAULT"]["OPENING_DELAY"])
+        config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(own_names_or_steamids))
     except:
-        defined_hotkeys[:] = ["Key.f9", "Key.ctrl_l"]
-        config.set('DEFAULT', 'HOTKEYS', ",".join(defined_hotkeys))
         config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(["PlayerName"]))
-    if not defined_hotkeys:
-        print("Define hotkeys in settings!")
-        return
+        config.set('DEFAULT', 'OPENING_DELAY', "0")
 
     with open("config.ini", 'w') as configfile:
         config.write(configfile)
 
-    _thread.start_new_thread(init_keyboard, ())
-
     start_time = time.time()
-    time.sleep(500)
     while True:
         check()
         delay = 3.0
