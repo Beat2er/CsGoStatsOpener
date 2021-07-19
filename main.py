@@ -343,7 +343,7 @@ def info():
           "\n\turl between 2 different teams"
           "\nTEAM_SWITCH_BEEP:"
           "\n\tbeep between 2 different teams"
-          "\noptional keybind: bind f11 status; con_logfile console.log")
+          "\noptional csgo commands: bind f11 status; con_logfile console.log")
 
 
 def print_wrapper(*args):
