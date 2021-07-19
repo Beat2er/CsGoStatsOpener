@@ -312,11 +312,10 @@ def main():
     with open("config.ini", 'w') as configfile:
         config.write(configfile)
 
-    start_time = time.time()
     while True:
         check_both()
         delay = 3.0
-        time.sleep(delay - ((time.time() - start_time) % delay))
+        time.sleep(delay)
 
 
 def info():
