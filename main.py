@@ -20,6 +20,7 @@ opening_delay = 0.0
 opening_same_player_delay = 0.0
 csgo_log_file = ""
 websites = []
+clear_console_log_on_startup = True
 
 
 class Player:
@@ -243,6 +244,7 @@ def main():
         global opening_delay
         global opening_same_player_delay
         global csgo_log_file
+        global clear_console_log_on_startup
         own_names_or_steamids[:] = list(config["DEFAULT"]["IGNORE_PLAYERS_TEAM"].split(","))
         config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(own_names_or_steamids))
         websites[:] = list(config["DEFAULT"]["USE_WEBSITES"].split(","))
@@ -253,6 +255,8 @@ def main():
         config.set('DEFAULT', 'OPENING_DELAY_SAME_PLAYER', str(opening_same_player_delay))
         csgo_log_file = config["DEFAULT"]["CSGO_LOG_FILE"]
         config.set('DEFAULT', 'CSGO_LOG_FILE', str(csgo_log_file))
+        clear_console_log_on_startup = config["DEFAULT"]["CLEAR_CONSOLE_LOG_ON_STARTUP"]
+        config.set('DEFAULT', 'CLEAR_CONSOLE_LOG_ON_STARTUP', str(clear_console_log_on_startup))
     except Exception as e:
         config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(["PlayerName"]))
         config.set('DEFAULT', 'USE_WEBSITES', ",".join(["csgostats.gg"]))
@@ -260,9 +264,15 @@ def main():
         config.set('DEFAULT', 'OPENING_DELAY_SAME_PLAYER', "0.0")
         config.set('DEFAULT', 'CSGO_LOG_FILE',
                    "C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\csgo\console.log")
+        config.set('DEFAULT', 'CLEAR_CONSOLE_LOG_ON_STARTUP',
+                   str(True))
 
     with open("config.ini", 'w') as configfile:
         config.write(configfile)
+
+    if clear_console_log_on_startup and csgo_log_file:
+        if os.path.exists(csgo_log_file):
+            os.remove(csgo_log_file)
 
     while True:
         check_both()
