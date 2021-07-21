@@ -180,7 +180,7 @@ def check(file: bool = False):
     if file:
         last_hash = last_file_hash
         try:
-            a_file = open(csgo_log_file, "r")
+            a_file = open(csgo_log_file, "r", encoding="utf8")
             lines = a_file.readlines()
             text = lines[-80:]
             text = "\n".join(text)
@@ -241,7 +241,8 @@ def main():
 
     if clear_console_log_on_startup and csgo_log_file:
         if os.path.exists(csgo_log_file):
-            os.remove(csgo_log_file)
+            with open(csgo_log_file, 'r+') as f:
+                f.truncate(0)
 
     while True:
         check_both()
@@ -325,7 +326,11 @@ def info():
           "\nCSGO_LOG_FILE:"
           "\n\tcsgo console log file path"
           "\n\tset with: 'con_logfile console.log'"
-          "\noptional csgo commands: bind f11 status; con_logfile console.log")
+          "\n"
+          "\n"
+          "\noptional csgo commands: bind f11 status; con_logfile console.log"         
+          "\n"
+          "\n")
 
 
 def print_wrapper(*args):
