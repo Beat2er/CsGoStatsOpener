@@ -237,38 +237,7 @@ def check_both():
 def main():
     info()
 
-    config = configparser.ConfigParser()
-    config.read("config.ini")
-    try:
-        global websites
-        global opening_delay
-        global opening_same_player_delay
-        global csgo_log_file
-        global clear_console_log_on_startup
-        own_names_or_steamids[:] = list(config["DEFAULT"]["IGNORE_PLAYERS_TEAM"].split(","))
-        config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(own_names_or_steamids))
-        websites[:] = list(config["DEFAULT"]["USE_WEBSITES"].split(","))
-        config.set('DEFAULT', 'USE_WEBSITES', ",".join(websites))
-        opening_delay = float(config["DEFAULT"]["OPENING_DELAY"])
-        config.set('DEFAULT', 'OPENING_DELAY', str(opening_delay))
-        opening_same_player_delay = float(config["DEFAULT"]["OPENING_DELAY_SAME_PLAYER"])
-        config.set('DEFAULT', 'OPENING_DELAY_SAME_PLAYER', str(opening_same_player_delay))
-        csgo_log_file = config["DEFAULT"]["CSGO_LOG_FILE"]
-        config.set('DEFAULT', 'CSGO_LOG_FILE', str(csgo_log_file))
-        clear_console_log_on_startup = config["DEFAULT"]["CLEAR_CONSOLE_LOG_ON_STARTUP"]
-        config.set('DEFAULT', 'CLEAR_CONSOLE_LOG_ON_STARTUP', str(clear_console_log_on_startup))
-    except Exception as e:
-        config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(["PlayerName"]))
-        config.set('DEFAULT', 'USE_WEBSITES', ",".join(["csgostats.gg"]))
-        config.set('DEFAULT', 'OPENING_DELAY', "0.1")
-        config.set('DEFAULT', 'OPENING_DELAY_SAME_PLAYER', "0.0")
-        config.set('DEFAULT', 'CSGO_LOG_FILE',
-                   "C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\csgo\console.log")
-        config.set('DEFAULT', 'CLEAR_CONSOLE_LOG_ON_STARTUP',
-                   str(True))
-
-    with open("config.ini", 'w') as configfile:
-        config.write(configfile)
+    load_settings()
 
     if clear_console_log_on_startup and csgo_log_file:
         if os.path.exists(csgo_log_file):
@@ -278,6 +247,65 @@ def main():
         check_both()
         delay = 3.0
         time.sleep(delay)
+
+
+def load_settings():
+    global own_names_or_steamids
+    global websites
+    global opening_delay
+    global opening_same_player_delay
+    global csgo_log_file
+    global clear_console_log_on_startup
+
+    config = configparser.ConfigParser()
+    config.read("config.ini")
+    try:
+        own_names_or_steamids[:] = list(config["DEFAULT"]["IGNORE_PLAYERS_TEAM"].split(","))
+        config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(own_names_or_steamids))
+    except Exception as e:
+        config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(["PlayerName"]))
+        print("Config Error: IGNORE_PLAYERS_TEAM")
+
+    try:
+        websites[:] = list(config["DEFAULT"]["USE_WEBSITES"].split(","))
+        config.set('DEFAULT', 'USE_WEBSITES', ",".join(websites))
+    except Exception as e:
+        config.set('DEFAULT', 'USE_WEBSITES', ",".join(["csgostats.gg"]))
+        print("Config Error: USE_WEBSITES")
+
+    try:
+        opening_delay = float(config["DEFAULT"]["OPENING_DELAY"])
+        config.set('DEFAULT', 'OPENING_DELAY', str(opening_delay))
+    except Exception as e:
+        config.set('DEFAULT', 'OPENING_DELAY', "0.1")
+        print("Config Error: OPENING_DELAY")
+
+    try:
+        opening_same_player_delay = float(config["DEFAULT"]["OPENING_DELAY_SAME_PLAYER"])
+        config.set('DEFAULT', 'OPENING_DELAY_SAME_PLAYER', str(opening_same_player_delay))
+    except Exception as e:
+        config.set('DEFAULT', 'OPENING_DELAY_SAME_PLAYER', "0.0")
+        print("Config Error: OPENING_DELAY_SAME_PLAYER")
+
+    try:
+        csgo_log_file = config["DEFAULT"]["CSGO_LOG_FILE"]
+        config.set('DEFAULT', 'CSGO_LOG_FILE', str(csgo_log_file))
+    except Exception as e:
+        config.set('DEFAULT', 'CSGO_LOG_FILE',
+                   "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Counter-Strike Global "
+                   "Offensive\\csgo\\console.log")
+        print("Config Error: CSGO_LOG_FILE")
+
+    try:
+        clear_console_log_on_startup = config["DEFAULT"]["CLEAR_CONSOLE_LOG_ON_STARTUP"] == "True"
+        config.set('DEFAULT', 'CLEAR_CONSOLE_LOG_ON_STARTUP', str(clear_console_log_on_startup))
+    except Exception as e:
+        config.set('DEFAULT', 'CLEAR_CONSOLE_LOG_ON_STARTUP',
+                   str(True))
+        print("Config Error: CLEAR_CONSOLE_LOG_ON_STARTUP")
+
+    with open("config.ini", 'w') as configfile:
+        config.write(configfile)
 
 
 def info():
