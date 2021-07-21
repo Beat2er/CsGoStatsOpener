@@ -4,7 +4,6 @@ import os
 import re
 import time
 import winsound
-from functools import cmp_to_key
 
 import pyperclip
 
@@ -21,10 +20,6 @@ opening_delay = 0.0
 opening_same_player_delay = 0.0
 csgo_log_file = ""
 websites = []
-dont_open_own = False
-delay_between_teams = 0.0
-url_between_teams = ""
-beep_between_teams = False
 
 
 class Player:
@@ -205,53 +200,26 @@ def check(file: bool = False):
 
         if players:
             print_wrapper("Opening")
-            own_rates = []  # shouldn't be more than 1
+            own_players = []  # shouldn't be more than 1
             if own_names_or_steamids:
                 for own_string in own_names_or_steamids:
                     for player in players:
                         try:  # bots have None set
                             if own_string in player.name or own_string in player.uniqueid or own_string in str(
                                     player.steamid_to_64bit(player.uniqueid)):
-                                own_rates.append(player.rate)
+                                own_players.append(player.uniqueid)
                         except:
                             pass
-
-            # sort players:
-            def compare(item1: Player, item2: Player):
-                if item1.rate < item2.rate:
-                    return -1
-                elif item1.rate > item2.rate:
-                    return 1
-                else:
-                    return 0
 
             # Remove bots
             players = list(filter(lambda x: x.is_bot == False, players))
 
-            # Sorting
-            players.sort(key=cmp_to_key(compare))
-            if players[0].rate != players[len(players) - 1].rate and own_rates:  # check if multiple teams
-                last_rate = players[len(players) - 1]
-                if last_rate in own_rates:
-                    pass
-                else:  # invert because we want enemies first
-                    players.reverse()
-
-            last_rate = players[0].rate
             for player in players:
-                if player.rate not in own_rates and own_rates:  # check in other team or nothing set
+                if player.uniqueid not in own_players:  # check in other team or nothing set
                     player.open_in_browser()
                 else:
-                    if last_rate != player.rate and last_rate:  # new team just started
-                        if url_between_teams:
-                            os.system('start "" "' + url_between_teams + '"')
-                        if beep_between_teams:
-                            beep(200, 220)
-                        time.sleep(delay_between_teams)
-                    last_rate = player.rate
+                    pass    # other unknown player
 
-                    if not dont_open_own:
-                        player.open_in_browser()
 
     if file:
         last_file_hash = hashed
@@ -275,10 +243,6 @@ def main():
         global opening_delay
         global opening_same_player_delay
         global csgo_log_file
-        global dont_open_own
-        global delay_between_teams
-        global url_between_teams
-        global beep_between_teams
         own_names_or_steamids[:] = list(config["DEFAULT"]["IGNORE_PLAYERS_TEAM"].split(","))
         config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(own_names_or_steamids))
         websites[:] = list(config["DEFAULT"]["USE_WEBSITES"].split(","))
@@ -289,14 +253,6 @@ def main():
         config.set('DEFAULT', 'OPENING_DELAY_SAME_PLAYER', str(opening_same_player_delay))
         csgo_log_file = config["DEFAULT"]["CSGO_LOG_FILE"]
         config.set('DEFAULT', 'CSGO_LOG_FILE', str(csgo_log_file))
-        dont_open_own = config["DEFAULT"]["DONT_OPEN_OWN_TEAM"] == "True"
-        config.set('DEFAULT', 'DONT_OPEN_OWN_TEAM', str(dont_open_own))
-        delay_between_teams = float(config["DEFAULT"]["TEAM_DELAY"])
-        config.set('DEFAULT', 'TEAM_DELAY', str(delay_between_teams))
-        url_between_teams = config["DEFAULT"]["TEAM_SEPARATOR_URL"]
-        config.set('DEFAULT', 'TEAM_SEPARATOR_URL', str(url_between_teams))
-        beep_between_teams = config["DEFAULT"]["TEAM_SWITCH_BEEP"] == "True"
-        config.set('DEFAULT', 'TEAM_SWITCH_BEEP', str(beep_between_teams))
     except Exception as e:
         config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(["PlayerName"]))
         config.set('DEFAULT', 'USE_WEBSITES', ",".join(["csgostats.gg"]))
@@ -304,10 +260,6 @@ def main():
         config.set('DEFAULT', 'OPENING_DELAY_SAME_PLAYER', "0.0")
         config.set('DEFAULT', 'CSGO_LOG_FILE',
                    "C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\csgo\console.log")
-        config.set('DEFAULT', 'DONT_OPEN_OWN_TEAM', "False")
-        config.set('DEFAULT', 'TEAM_DELAY', "1.0")
-        config.set('DEFAULT', 'TEAM_SEPARATOR_URL', "https://random.dog/")
-        config.set('DEFAULT', 'TEAM_SWITCH_BEEP', "True")
 
     with open("config.ini", 'w') as configfile:
         config.write(configfile)
@@ -335,14 +287,6 @@ def info():
           "\nCSGO_LOG_FILE:"
           "\n\tcsgo console log file path"
           "\n\tset with: 'con_logfile console.log'"
-          "\nDONT_OPEN_OWN_TEAM:"
-          "\n\twont open any player in your team"
-          "\nTEAM_DELAY:"
-          "\n\tdelay between 2 different teams"
-          "\nTEAM_SEPARATOR_URL:"
-          "\n\turl between 2 different teams"
-          "\nTEAM_SWITCH_BEEP:"
-          "\n\tbeep between 2 different teams"
           "\noptional csgo commands: bind f11 status; con_logfile console.log")
 
 
