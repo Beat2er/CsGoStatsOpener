@@ -261,11 +261,11 @@ def load_settings():
     config = configparser.ConfigParser()
     config.read("config.ini")
     try:
-        own_names_or_steamids[:] = list(config["DEFAULT"]["IGNORE_PLAYERS_TEAM"].split(","))
-        config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(own_names_or_steamids))
+        own_names_or_steamids[:] = list(config["DEFAULT"]["IGNORE_PLAYERS"].split(","))
+        config.set('DEFAULT', 'IGNORE_PLAYERS', ",".join(own_names_or_steamids))
     except Exception as e:
-        config.set('DEFAULT', 'IGNORE_PLAYERS_TEAM', ",".join(["PlayerName"]))
-        print("Config Error: IGNORE_PLAYERS_TEAM")
+        config.set('DEFAULT', 'IGNORE_PLAYERS', ",".join(["PlayerName"]))
+        print("Config Error: IGNORE_PLAYERS")
 
     try:
         websites[:] = list(config["DEFAULT"]["USE_WEBSITES"].split(","))
@@ -311,7 +311,7 @@ def load_settings():
 
 def info():
     print("There is a settings file, where you can control the following:"
-          "\nIGNORE_PLAYERS_TEAM:"
+          "\nIGNORE_PLAYERS:"
           "\n\tcomma separated values"
           "\n\tpart of a username or steamid"
           "\n\twill only open players where none of these values matches with everyone in the team"
