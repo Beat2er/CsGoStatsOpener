@@ -66,6 +66,8 @@ class Player:
                 commands.append('start "" "' + self.get_steamid_uk_url() + '"')
             if "steamdb.info" in websites:
                 commands.append('start "" "' + self.get_steamdb_info_url() + '"')
+            if "csgobackpack.net" in websites:
+                commands.append('start "" "' + self.get_csgobackpack_net_url() + '"')
 
             for command in commands:
                 os.system(command)
@@ -91,6 +93,9 @@ class Player:
 
     def get_steamdb_info_url(self):
         return str("https://steamdb.info/calculator/") + str(Player.steamid_to_64bit(self.uniqueid))
+
+    def get_csgobackpack_net_url(self):
+        return str("csgobackpack.net/?nick=") + str(Player.steamid_to_64bit(self.uniqueid))
 
     @staticmethod
     def steamid_to_64bit(steamid: str):
@@ -219,8 +224,7 @@ def check(file: bool = False):
                 if player.uniqueid not in own_players:  # check in other team or nothing set
                     player.open_in_browser()
                 else:
-                    pass    # other unknown player
-
+                    pass  # other unknown player
 
     if file:
         last_file_hash = hashed
@@ -318,7 +322,7 @@ def info():
           "\nUSE_WEBSITES:"
           "\n\tcomma separated values"
           "\n\twebsites to open"
-          "\n\tcsgostats.gg,csgo-stats.net,csgo-stats.com,steamcommunity.com,steamid.uk,steamdb.info"
+          "\n\tcsgostats.gg,csgo-stats.net,csgo-stats.com,steamcommunity.com,steamid.uk,steamdb.info,csgobackpack.net"
           "\nOPENING_DELAY:"
           "\n\tdelay between opening each player"
           "\nOPENING_DELAY_SAME_PLAYER:"
@@ -328,7 +332,7 @@ def info():
           "\n\tset with: 'con_logfile console.log'"
           "\n"
           "\n"
-          "\noptional csgo commands: bind f11 status; con_logfile console.log"         
+          "\noptional csgo commands: bind f11 status; con_logfile console.log"
           "\n"
           "\n")
 
