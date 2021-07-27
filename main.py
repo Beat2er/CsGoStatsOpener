@@ -249,7 +249,6 @@ def check_url_clipboard():
 
     import requests
 
-    text = "https://steamcommunity.com/id/Beat2er/"
     url = 'https://steamid.xyz/' + text
 
     x = requests.get(url)
