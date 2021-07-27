@@ -4,8 +4,12 @@ import os
 import re
 import time
 import winsound
-
 import pyperclip
+import requests
+from termcolor import colored
+
+VERSION = "a1.0"
+
 
 # internal variables
 last_clipboard_hash = ""
@@ -247,7 +251,8 @@ def check_url_clipboard():
         return
     last_clipboard_url_hash = hashed
 
-    import requests
+    if "steamcommunity.com" not in text:
+        return
 
     url = 'https://steamid.xyz/' + text
 
@@ -263,7 +268,6 @@ def check_url_clipboard():
     player = Player(uniqueid=data)
 
     player.open_in_browser()
-
 
 
 def main():
@@ -366,6 +370,30 @@ def info():
           "\n")
 
 
+def check_update():
+    update_url = "https://github.com/Beat2er/CsGoStatsOpener/raw/{version}/CsGoStatsOpener.exe"
+    version_url = "https://raw.githubusercontent.com/Beat2er/CsGoStatsOpener/master/.latest-version"
+    x = requests.get(version_url)
+    data = x.text
+    data = data.split("\n")[0]
+
+    if " " in data:
+        print(colored("Can't check current version: " +
+                      "https://raw.githubusercontent.com/Beat2er/CsGoStatsOpener/master/.latest-version " + data,
+                      "red"))
+        print("\n\n\n\n\n\n")
+        time.sleep(3)
+        return
+
+    if data != VERSION:
+        update_url = update_url.replace("{version}", data)
+        print(colored("Current version is " + VERSION + ", but new Version is " + data + ".", "yellow"))
+        print(colored("Download the new version here: " + update_url, "green"))
+        print("\n\n\n\n\n\n")
+        time.sleep(3)
+        return
+
+
 def print_wrapper(*args):
     now = datetime.datetime.now()
     args = list(args)
@@ -375,4 +403,5 @@ def print_wrapper(*args):
 
 if __name__ == "__main__":
     # execute only if run as a script
+    check_update()
     main()
