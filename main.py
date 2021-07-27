@@ -9,6 +9,7 @@ import pyperclip
 
 # internal variables
 last_clipboard_hash = ""
+last_clipboard_url_hash = ""
 last_file_hash = ""
 keys_pressed = list([])
 starting_string = "# userid name uniqueid connected ping loss state rate"
@@ -238,6 +239,34 @@ def check_both():
         check(True)
 
 
+def check_url_clipboard():
+    global last_clipboard_url_hash
+    text = pyperclip.paste()
+    hashed = hash(text)
+    if last_clipboard_url_hash == hashed:
+        return
+    last_clipboard_url_hash = hashed
+
+    import requests
+
+    text = "https://steamcommunity.com/id/Beat2er/"
+    url = 'https://steamid.xyz/' + text
+
+    x = requests.get(url)
+    data = x.text
+    start = data.find("Steam ID\r\n")
+    end = data.find("\">", start)
+    start = data.rfind("\"", start, end) + 1
+    data = data[start:end]
+    if not data.startswith("STEAM_"):
+        return
+
+    player = Player(uniqueid=data)
+
+    player.open_in_browser()
+
+
+
 def main():
     info()
 
@@ -250,6 +279,7 @@ def main():
 
     while True:
         check_both()
+        check_url_clipboard()
         delay = 3.0
         time.sleep(delay)
 
